@@ -2,7 +2,7 @@
 MATLAB simulation for closed loop using Bang-Bang control
 
 # OBJECTIVE
-To simulate readings from a tank in a closed loop system using Bang-Bang control.
+To simulate a relay controlled water-level control system for a tank in a closed loop system using Bang-Bang control and evaluate how different hysteresis bands affect relay switching frequency.
 
 # METHODOLOGY
 Tank water level is simulated over time with fixed drain rate and fill rate. Based on hysteresis, the relay module turning the pump ON / OFF is based on previous time step’s water level.
@@ -48,19 +48,19 @@ Hysteresis values for each relay switch count -
 | Hysteresis value | Relay switch count |
 |:---|---:|
 | 0.5 | 8 times over 500 minutes |
-| 1 | times over 500 minutes |
+| 1 | 4 times over 500 minutes |
 | 2 | 2 times over 500 minutes |
 | 4 | 2 times over 500 minutes |
 | 6 | 1 time over 500 minutes |
 
 # OBSERVATIONS
 - The simulation show Bang-Bang control in a closed loop with a target level of 15 cm and a defined time window of 500 min.
-- Switching the pump ON when the hysteresis value is below the target level and switching OFF when the water level is above the target level. 
+- The pump ON switches when the water level drops below the lower threshold limit (Target level - Hysteresis) and switches OFF when the water level rises above the upper threshold limit (Target level + Hysteresis).
 -	When the hysteresis values are 2 cm and 4 cm, the relay switch counts are 2. This might be due to fixed time interval (500 min), fixed fill rate and drain rate.
 -	Testing multiple hysteresis bands shows an inverse relationship between hysteresis band and relay switch count. A narrow band caused more frequent switching whereas a wider band requires reduced switching.
 
 # LIMITATIONS
-- Although a real-time closed loop simulation is done, certain aspect rely on assumptions rather than real-time data.
+- Although a real-time closed loop simulation is done, certain aspects rely on assumptions rather than real-time data.
 - Calibration curve of water-level sensor is assumed since actual resistance-to-level readings are not yet measured.
 - Drain rate and fill rate are pre-defined and do not represent real-time factors like evaporation.
 - The simulation window was set to 500 minutes, which was insufficient to differentiate relay-switching for 2 cm and 4 cm hysteresis bands.
