@@ -1,0 +1,91 @@
+
+
+%% Turtle Tank - Closed-Loop Water Level Control (Bang-Bang / Hysteresis)
+% Simulates a resistive water level sensor + relay-controlled pump
+% Demonstrates hysteresis control to prevent relay chatter
+% NOTE: Calibration curve below is a documented placeholder,
+% to be refined once real hardware calibration data is available.
+
+clear; clc; close all;
+rng(42);
+
+%% Output folder (Desktop - avoids Documents write-permission issue)
+outDir = fullfile('C:\Users\kramy\Desktop', 'turtle_tank_figures');
+if ~exist(outDir, 'dir')
+    mkdir(outDir);
+end
+
+%% ---------------- Calibration Curve (placeholder) ----------------
+level_cal = 0:0.5:20;                      % water level, cm
+resistance_cal = 5000 - 200*level_cal + 2*level_cal.^2;  % placeholder curve
+
+figure;
+plot(level_cal, resistance_cal, 'm', 'LineWidth', 1.5);
+xlabel('Water Level (cm)'); ylabel('Sensor Resistance (Ohms)');
+title('Water Level Sensor Calibration Curve (Placeholder)');
+grid on;
+outFile = fullfile(outDir, 'calibration_curve.png');
+saveas(gcf, outFile);
+
+%% ---------------- Control Parameters ----------------
+target_level = 15;     % desired water level, cm
+hysteresis = 1;        % +/- band around target, cm
+dt = 2;                 % time step, minutes
+T = 500;                % total simulation time, minutes
+
+drain_rate = 0.01;      % natural loss per minute (evaporation/filtration loss)
+fill_rate = 0.05;       % refill rate per minute when pump is ON
+
+%% ---------------- Simulation ----------------
+level_sim = zeros(1, T);
+relay_state = zeros(1, T);
+
+level_sim(1) = 13;      % starting level, below target
+relay_on = false;
+
+for i = 2:T
+    % --- Decision logic (hysteresis / bang-bang control) ---
+    if level_sim(i-1) < (target_level - hysteresis)
+        relay_on = true;       % too low, turn pump ON
+    elseif level_sim(i-1) > (target_level + hysteresis)
+        relay_on = false;      % too high, turn pump OFF
+    end
+    % if in between the band, relay_on keeps its previous value (no change)
+
+    relay_state(i) = relay_on;
+
+    % --- Physical system update ---
+    drain = drain_rate;
+    fill = fill_rate * relay_on;   % only fills if relay is ON
+    level_sim(i) = level_sim(i-1) - drain + fill;
+end
+
+%% ---------------- Analysis: count relay switches ----------------
+switch_count = sum(abs(diff(relay_state)));
+fprintf('Relay switched %d times over %d minutes.\n', switch_count, T);
+
+%% ---------------- Plot Results ----------------
+figure;
+
+subplot(2,1,1);
+plot(1:T, level_sim, 'b', 'LineWidth', 1.2); hold on;
+yline(target_level, 'k--', 'Target');
+yline(target_level + hysteresis, 'r--', 'Upper bound');
+yline(target_level - hysteresis, 'r--', 'Lower bound');
+ylabel('Water Level (cm)');
+title('Turtle Tank Water Level - Closed-Loop Bang-Bang Control');
+grid on;
+
+subplot(2,1,2);
+stairs(1:T, relay_state, 'r', 'LineWidth', 1.2);
+ylim([-0.2 1.2]);
+ylabel('Relay State (0=OFF, 1=ON)');
+xlabel('Time (min)');
+title(sprintf('Relay Switching (%d switches total)', switch_count));
+grid on;
+
+outFile = fullfile(outDir, sprintf('waterlevel_control_hyst%.1f.png', hysteresis));
+saveas(gcf, outFile);
+
+disp('Simulation complete. Figures saved to Desktop/turtle_tank_figures.');
+
